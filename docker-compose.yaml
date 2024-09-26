@@ -19,8 +19,8 @@ services:
       - "3100:3100"
 
   app-a:
-    # build: ./fastapi_app/
-    image: ghcr.io/blueswen/fastapi-observability/app:latest
+    build: ./fastapi_app/
+    # image: ghcr.io/blueswen/fastapi-observability/app:latest
     ports:
       - "8000:8000"
     depends_on:
@@ -30,8 +30,8 @@ services:
     logging: *default-logging
 
   app-b:
-    # build: ./fastapi_app/
-    image: ghcr.io/blueswen/fastapi-observability/app:latest
+    build: ./fastapi_app/
+    # image: ghcr.io/blueswen/fastapi-observability/app:latest
     ports:
       - "8001:8000"
     depends_on:
@@ -41,8 +41,8 @@ services:
     logging: *default-logging
 
   app-c:
-    # build: ./fastapi_app/
-    image: ghcr.io/blueswen/fastapi-observability/app:latest
+    build: ./fastapi_app/
+    # image: ghcr.io/blueswen/fastapi-observability/app:latest
     ports:
       - "8002:8000"
     depends_on:
