@@ -9,15 +9,7 @@ x-logging: &default-logging
       - regex:
           expression: '^(?P<time>\d{4}-\d{2}-\d{2} \d{1,2}:\d{2}:\d{2},d{3}) (?P<message>(?s:.*))$$'
 
-version: "3.4"
-
 services:
-  loki:
-    image: grafana/loki:3.0.0
-    command: -config.file=/etc/loki/local-config.yaml
-    ports:
-      - "3100:3100"
-
   app-a:
     build: ./fastapi_app/
     # image: ghcr.io/blueswen/fastapi-observability/app:latest
@@ -27,6 +19,7 @@ services:
       - loki
     environment:
       APP_NAME: "app-a"
+      OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: http://localhost:5317
     logging: *default-logging
 
   app-b:
@@ -51,6 +44,17 @@ services:
       APP_NAME: "app-c"
     logging: *default-logging
 
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.110.0
+    ports:
+      # Watch out for clash with tempo
+      - "5317:5317"
+      - "55679:55679"
+      - "1777:1777"
+      - "13133:13133"
+    volumes:
+      - ./etc/otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml
+
   prometheus:
     image: prom/prometheus:v2.51.2
     ports:
@@ -63,6 +67,12 @@ services:
     depends_on:
       - loki
     logging: *default-logging
+
+  loki:
+    image: grafana/loki:3.0.0
+    command: -config.file=/etc/loki/local-config.yaml
+    ports:
+      - "3100:3100"
 
   tempo:
     image: grafana/tempo:2.4.1
