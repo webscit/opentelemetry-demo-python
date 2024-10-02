@@ -12,7 +12,7 @@ from utils import setting_otlp
 
 APP_NAME = os.environ.get("APP_NAME", "app")
 EXPOSE_PORT = os.environ.get("EXPOSE_PORT", 8000)
-AUTO_INSTRUMENTATION = os.environ.get("OTEL_AUTO_INSTRUMENTATION") is not None
+AUTO_INSTRUMENTATION_LEVEL = os.environ.get("OTEL_AUTO_INSTRUMENTATION_LEVEL", "0")
 
 TARGET_ONE_HOST = os.environ.get("TARGET_ONE_HOST", "app-b")
 TARGET_TWO_HOST = os.environ.get("TARGET_TWO_HOST", "app-c")
@@ -20,7 +20,7 @@ TARGET_TWO_HOST = os.environ.get("TARGET_TWO_HOST", "app-c")
 app = FastAPI()
 
 # Setting OpenTelemetry exporter
-setting_otlp(app, APP_NAME)
+setting_otlp(app, APP_NAME, AUTO_INSTRUMENTATION_LEVEL)
 
 
 class EndpointFilter(logging.Filter):
@@ -83,7 +83,8 @@ async def error_test(response: Response):
 @app.get("/chain")
 async def chain(response: Response):
     headers = {}
-    inject(headers)  # inject trace info to header
+    if AUTO_INSTRUMENTATION_LEVEL == "0":
+        inject(headers)  # inject trace info to header
     logging.critical(headers)
 
     async with httpx.AsyncClient() as client:

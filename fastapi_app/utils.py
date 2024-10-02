@@ -108,29 +108,55 @@ class OtelMiddleware(BaseHTTPMiddleware):
         return request.url.path, False
 
 
-def setting_otlp(app: ASGIApp, app_name: str, log_correlation: bool = True) -> None:
-    # Setting OpenTelemetry
-    # set the service name to show in traces
-    resource = Resource.create(
-        attributes={"service.name": app_name, "compose_service": app_name}
-    )
+def setting_otlp(
+    app: ASGIApp,
+    app_name: str,
+    auto_instrumentation_level: str = "0",
+    log_correlation: bool = True,
+) -> None:
+    """
+    auto_instrumentation_level:
+    - '0': Application instrumentation is using opentelemetry contrib for logs and traces but custom metrics
+    - '1': Application instrumentation is only through the opentelemetry contrib middleware for logs, traces and metrics
+    - '2': Application is expected to be executed by the opentelemetry agent `opentelemetry-instrument <my-app>`
+    """
+    if auto_instrumentation_level < "2":
+        # Setting OpenTelemetry
+        # set the service name to show in traces
+        resource = Resource.create(
+            attributes={
+                # Standard attribute to reference a service
+                "service.name": app_name,
+                # Attributes to link traces to logs
+                "compose_service": app_name
+            }
+        )
 
-    # set the tracer provider
-    tracer = TracerProvider(resource=resource)
-    tracer.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
-    trace.set_tracer_provider(tracer)
+        # set the tracer provider
+        tracer = TracerProvider(resource=resource)
+        tracer.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
+        trace.set_tracer_provider(tracer)
 
-    reader = PeriodicExportingMetricReader(
-        OTLPMetricExporter(),
-        export_interval_millis=5_000,
-    )
-    # Debug exporter to print metric on stdout
-    # reader2 = PeriodicExportingMetricReader(ConsoleMetricExporter(), export_interval_millis=5_000)
-    meter_provider = MeterProvider(resource=resource, metric_readers=[reader])
-    otel_metrics.set_meter_provider(meter_provider)
+        reader = PeriodicExportingMetricReader(
+            OTLPMetricExporter(),
+            export_interval_millis=5_000,
+        )
+        # Debug exporter to print metric on stdout
+        # reader2 = PeriodicExportingMetricReader(ConsoleMetricExporter(), export_interval_millis=5_000)
+        meter_provider = MeterProvider(resource=resource, metric_readers=[reader])
+        otel_metrics.set_meter_provider(meter_provider)
 
-    if log_correlation:
-        LoggingInstrumentor().instrument(set_logging_format=True)
+        if log_correlation:
+            LoggingInstrumentor().instrument(set_logging_format=True)
 
-    app.add_middleware(OtelMiddleware, app_name=app_name, meter_provider=meter_provider)
-    FastAPIInstrumentor.instrument_app(app, tracer_provider=tracer)
+        if auto_instrumentation_level == "0":
+            app.add_middleware(
+                OtelMiddleware, app_name=app_name, meter_provider=meter_provider
+            )
+        FastAPIInstrumentor.instrument_app(
+            app,
+            tracer_provider=tracer,
+            meter_provider=meter_provider
+            if auto_instrumentation_level == "1"
+            else None,
+        )

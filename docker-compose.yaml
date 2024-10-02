@@ -24,6 +24,17 @@ services:
       # OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: http://otel-collector:5318/v1/metrics
       OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: http://prometheus:9090/api/v1/otlp/v1/metrics
       OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://tempo:4317
+      #
+      OTEL_SERVICE_NAME: app-a
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: otlp
+      OTEL_PYTHON_LOG_CORRELATION: true
+      # OTEL_PYTHON_LOG_LEVEL: debug
+      OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED: true
+      # For test purpose - not an official environment variable
+      OTEL_AUTO_INSTRUMENTATION_LEVEL: "2"
+    # To be activated only if OTEL_AUTO_INSTRUMENTATION_LEVEL == "2"
+    command: ["opentelemetry-instrument", "python", "main.py"]
     logging: *default-logging
 
   app-b:
@@ -40,6 +51,17 @@ services:
       # OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: http://otel-collector:5318/v1/metrics
       OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: http://prometheus:9090/api/v1/otlp/v1/metrics
       OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://tempo:4317
+      #
+      OTEL_SERVICE_NAME: app-b
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: otlp
+      OTEL_PYTHON_LOG_CORRELATION: true
+      # OTEL_PYTHON_LOG_LEVEL: debug
+      OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED: true
+      # For test purpose - not an official environment variable
+      OTEL_AUTO_INSTRUMENTATION_LEVEL: "2"
+    # To be activated only if OTEL_AUTO_INSTRUMENTATION_LEVEL == "2"
+    command: ["opentelemetry-instrument", "python", "main.py"]
     logging: *default-logging
 
   app-c:
@@ -56,6 +78,17 @@ services:
       # OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: http://otel-collector:5318/v1/metrics
       OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: http://prometheus:9090/api/v1/otlp/v1/metrics
       OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://tempo:4317
+      #
+      OTEL_SERVICE_NAME: app-c
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: otlp
+      OTEL_PYTHON_LOG_CORRELATION: true
+      # OTEL_PYTHON_LOG_LEVEL: debug
+      OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED: true
+      # For test purpose - not an official environment variable
+      OTEL_AUTO_INSTRUMENTATION_LEVEL: "2"
+    # To be activated only if OTEL_AUTO_INSTRUMENTATION_LEVEL == "2"
+    command: ["opentelemetry-instrument", "python", "main.py"]
     logging: *default-logging
 
   # To try and/or debug using a OpenTelemetry collector
