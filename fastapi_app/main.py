@@ -8,7 +8,7 @@ import httpx
 import uvicorn
 from fastapi import FastAPI, Response
 from opentelemetry.propagate import inject
-from utils import PrometheusMiddleware, metrics, setting_otlp
+from utils import setting_otlp
 
 APP_NAME = os.environ.get("APP_NAME", "app")
 EXPOSE_PORT = os.environ.get("EXPOSE_PORT", 8000)
@@ -18,10 +18,6 @@ TARGET_ONE_HOST = os.environ.get("TARGET_ONE_HOST", "app-b")
 TARGET_TWO_HOST = os.environ.get("TARGET_TWO_HOST", "app-c")
 
 app = FastAPI()
-
-# Setting metrics middleware
-app.add_middleware(PrometheusMiddleware, app_name=APP_NAME)
-app.add_route("/metrics", metrics)
 
 # Setting OpenTelemetry exporter
 setting_otlp(app, APP_NAME, OTLP_GRPC_ENDPOINT)
