@@ -9,7 +9,10 @@ from opentelemetry.instrumentation.logging import LoggingInstrumentor
 from opentelemetry import metrics as otel_metrics
 from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter
 from opentelemetry.sdk.metrics import MeterProvider
-from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
+from opentelemetry.sdk.metrics.export import (
+    PeriodicExportingMetricReader,
+    ConsoleMetricExporter,
+)
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
@@ -124,7 +127,9 @@ def metrics(request: Request) -> Response:
 
 
 class OtelMiddleware(BaseHTTPMiddleware):
-    def __init__(self, app: ASGIApp, app_name: str = "fastapi-app", meter_provider = None) -> None:
+    def __init__(
+        self, app: ASGIApp, app_name: str = "fastapi-app", meter_provider=None
+    ) -> None:
         super().__init__(app)
         self.app_name = app_name
 
@@ -220,7 +225,12 @@ def setting_otlp(
     tracer.add_span_processor(BatchSpanProcessor(OTLPSpanExporter(endpoint=endpoint)))
     trace.set_tracer_provider(tracer)
 
-    reader = PeriodicExportingMetricReader(OTLPMetricExporter())
+    reader = PeriodicExportingMetricReader(
+        OTLPMetricExporter(),
+        export_interval_millis=5_000,
+    )
+    # Debug exporter to print metric on stdout
+    # reader2 = PeriodicExportingMetricReader(ConsoleMetricExporter(), export_interval_millis=5_000)
     meter_provider = MeterProvider(resource=resource, metric_readers=[reader])
     otel_metrics.set_meter_provider(meter_provider)
 

@@ -11,7 +11,8 @@ x-logging: &default-logging
 
 services:
   app-a:
-    build: ./fastapi_app/
+    # build: ./fastapi_app/
+    image: fastapi_app
     # image: ghcr.io/blueswen/fastapi-observability/app:latest
     ports:
       - "8000:8000"
@@ -19,11 +20,12 @@ services:
       - loki
     environment:
       APP_NAME: "app-a"
-      OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: http://localhost:5317
+      OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: http://otel-collector:5317
     logging: *default-logging
 
   app-b:
-    build: ./fastapi_app/
+    # build: ./fastapi_app/
+    image: fastapi_app
     # image: ghcr.io/blueswen/fastapi-observability/app:latest
     ports:
       - "8001:8000"
@@ -31,10 +33,12 @@ services:
       - loki
     environment:
       APP_NAME: "app-b"
+      OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: http://otel-collector:5317
     logging: *default-logging
 
   app-c:
-    build: ./fastapi_app/
+    # build: ./fastapi_app/
+    image: fastapi_app
     # image: ghcr.io/blueswen/fastapi-observability/app:latest
     ports:
       - "8002:8000"
@@ -42,6 +46,7 @@ services:
       - loki
     environment:
       APP_NAME: "app-c"
+      OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: http://otel-collector:5317
     logging: *default-logging
 
   otel-collector:
