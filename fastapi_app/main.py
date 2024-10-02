@@ -12,7 +12,7 @@ from utils import setting_otlp
 
 APP_NAME = os.environ.get("APP_NAME", "app")
 EXPOSE_PORT = os.environ.get("EXPOSE_PORT", 8000)
-OTLP_GRPC_ENDPOINT = os.environ.get("OTLP_GRPC_ENDPOINT", "http://tempo:4317")
+AUTO_INSTRUMENTATION = os.environ.get("OTEL_AUTO_INSTRUMENTATION") is not None
 
 TARGET_ONE_HOST = os.environ.get("TARGET_ONE_HOST", "app-b")
 TARGET_TWO_HOST = os.environ.get("TARGET_TWO_HOST", "app-c")
@@ -20,7 +20,7 @@ TARGET_TWO_HOST = os.environ.get("TARGET_TWO_HOST", "app-c")
 app = FastAPI()
 
 # Setting OpenTelemetry exporter
-setting_otlp(app, APP_NAME, OTLP_GRPC_ENDPOINT)
+setting_otlp(app, APP_NAME)
 
 
 class EndpointFilter(logging.Filter):

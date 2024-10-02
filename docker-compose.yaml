@@ -23,6 +23,7 @@ services:
       APP_NAME: "app-a"
       # OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: http://otel-collector:5318/v1/metrics
       OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: http://prometheus:9090/api/v1/otlp/v1/metrics
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://tempo:4317
     logging: *default-logging
 
   app-b:
@@ -38,6 +39,7 @@ services:
       APP_NAME: "app-b"
       # OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: http://otel-collector:5318/v1/metrics
       OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: http://prometheus:9090/api/v1/otlp/v1/metrics
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://tempo:4317
     logging: *default-logging
 
   app-c:
@@ -53,6 +55,7 @@ services:
       APP_NAME: "app-c"
       # OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: http://otel-collector:5318/v1/metrics
       OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: http://prometheus:9090/api/v1/otlp/v1/metrics
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://tempo:4317
     logging: *default-logging
 
   # To try and/or debug using a OpenTelemetry collector
