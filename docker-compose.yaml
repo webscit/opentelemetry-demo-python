@@ -11,54 +11,61 @@ x-logging: &default-logging
 
 services:
   app-a:
-    # build: ./fastapi_app/
-    image: fastapi_app
+    build:
+      context: ./fastapi_app/
     # image: ghcr.io/blueswen/fastapi-observability/app:latest
     ports:
       - "8000:8000"
     depends_on:
       - loki
+      - prometheus
     environment:
       APP_NAME: "app-a"
-      OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: http://otel-collector:5317
+      # OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: http://otel-collector:5318/v1/metrics
+      OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: http://prometheus:9090/api/v1/otlp/v1/metrics
     logging: *default-logging
 
   app-b:
-    # build: ./fastapi_app/
-    image: fastapi_app
+    build:
+      context: ./fastapi_app/
     # image: ghcr.io/blueswen/fastapi-observability/app:latest
     ports:
       - "8001:8000"
     depends_on:
       - loki
+      - prometheus
     environment:
       APP_NAME: "app-b"
-      OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: http://otel-collector:5317
+      # OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: http://otel-collector:5318/v1/metrics
+      OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: http://prometheus:9090/api/v1/otlp/v1/metrics
     logging: *default-logging
 
   app-c:
-    # build: ./fastapi_app/
-    image: fastapi_app
+    build:
+      context: ./fastapi_app/
     # image: ghcr.io/blueswen/fastapi-observability/app:latest
     ports:
       - "8002:8000"
     depends_on:
       - loki
+      - prometheus
     environment:
       APP_NAME: "app-c"
-      OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: http://otel-collector:5317
+      # OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: http://otel-collector:5318/v1/metrics
+      OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: http://prometheus:9090/api/v1/otlp/v1/metrics
     logging: *default-logging
 
-  otel-collector:
-    image: otel/opentelemetry-collector-contrib:0.110.0
-    ports:
-      # Watch out for clash with tempo
-      - "5317:5317"
-      - "55679:55679"
-      - "1777:1777"
-      - "13133:13133"
-    volumes:
-      - ./etc/otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml
+  # To try and/or debug using a OpenTelemetry collector
+  # otel-collector:
+  #   image: otel/opentelemetry-collector-contrib:0.110.0
+  #   ports:
+  #     # Watch out for clash with tempo
+  #     - "5318:5318"
+  #     - "55679:55679"
+  #     - "1777:1777"
+  #     - "13133:13133"
+  #   volumes:
+  #     - ./etc/otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml
 
   prometheus:
     image: prom/prometheus:v2.51.2
@@ -69,6 +76,9 @@ services:
     command:
       - --config.file=/workspace/prometheus.yml
       - --enable-feature=exemplar-storage
+      # Needed for pushing metrics to prometheus directly
+      - --enable-feature=otlp-write-receiver
+      - --web.enable-remote-write-receiver
     depends_on:
       - loki
     logging: *default-logging
@@ -100,4 +110,5 @@ services:
     depends_on:
       - loki
       - prometheus
+      - tempo
     logging: *default-logging

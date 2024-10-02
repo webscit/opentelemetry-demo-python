@@ -1,24 +1,25 @@
 receivers:
-    otlp:
-        protocols:
-            grpc:
-                endpoint: 0.0.0.0:5317
-
+  otlp:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:5318
+        
 exporters:
+  # Print telemetry as log on the collector
   debug:
     verbosity: detailed
-
-processors:
-    batch:
-
+            
 extensions:
+  # Introspect the collector itself
+  # See: https://github.com/open-telemetry/opentelemetry-collector/blob/main/extension/zpagesextension/README.md
   zpages:
     endpoint: 0.0.0.0:55679
-
+              
 service:
-    extensions: [zpages]
-    pipelines:
-        metrics:
-            receivers: [otlp]
-            # processors: [batch]
-            exporters: [debug]
+  # extensions: [zpages]
+  pipelines:
+    metrics:
+      receivers: [otlp]
+      # processors: []
+      exporters: [debug]
+      
