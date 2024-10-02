@@ -1002,10 +1002,10 @@
           "query": "label_values(fastapi_requests_duration_seconds_count{}, app_name)",
           "refId": "StandardVariableQuery"
         },
-        "refresh": 1,
+        "refresh": 2,
         "regex": "",
         "skipUrlSync": false,
-        "sort": 0,
+        "sort": 1,
         "type": "query"
       },
       {
