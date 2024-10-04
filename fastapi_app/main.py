@@ -11,7 +11,7 @@ from opentelemetry.propagate import inject
 from utils import setting_otlp
 
 APP_NAME = os.environ.get("APP_NAME", "app")
-EXPOSE_PORT = os.environ.get("EXPOSE_PORT", 8000)
+EXPOSE_PORT = int(os.environ.get("EXPOSE_PORT", "8000"))
 AUTO_INSTRUMENTATION_LEVEL = os.environ.get("OTEL_AUTO_INSTRUMENTATION_LEVEL", "0")
 
 TARGET_ONE_HOST = os.environ.get("TARGET_ONE_HOST", "app-b")
