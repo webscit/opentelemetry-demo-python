@@ -1,3 +1,4 @@
+import logging
 import time
 from typing import Tuple
 
@@ -120,6 +121,7 @@ def setting_otlp(
     - '1': Application instrumentation is only through the opentelemetry contrib middleware for logs, traces and metrics
     - '2': Application is expected to be executed by the opentelemetry agent `opentelemetry-instrument <my-app>`
     """
+    logging.getLogger("fastapi_app").info("Auto instrumentation level for service %s: %s", app_name, auto_instrumentation_level)
     if auto_instrumentation_level < "2":
         # Setting OpenTelemetry
         # set the service name to show in traces
@@ -147,12 +149,15 @@ def setting_otlp(
         otel_metrics.set_meter_provider(meter_provider)
 
         if log_correlation:
+            logging.getLogger("fastapi_app").info("Set logging instrumentation")
             LoggingInstrumentor().instrument(set_logging_format=True)
 
         if auto_instrumentation_level == "0":
+            logging.getLogger("fastapi_app").info("Use custom otel meters.")
             app.add_middleware(
                 OtelMiddleware, app_name=app_name, meter_provider=meter_provider
             )
+        logging.getLogger("fastapi_app").info("Set FastAPI instrumentor.")
         FastAPIInstrumentor.instrument_app(
             app,
             tracer_provider=tracer,
