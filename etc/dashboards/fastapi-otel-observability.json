@@ -696,7 +696,7 @@
             "uid": "prometheus"
           },
           "exemplar": true,
-          "expr": "http_server_active_requests{job=\"$app_name\", http_target!=\"/metrics\"}",
+          "expr": "sum(http_server_active_requests{job=\"$app_name\"}) by(job)",
           "interval": "",
           "legendFormat": "{{http_target}}",
           "refId": "A"
