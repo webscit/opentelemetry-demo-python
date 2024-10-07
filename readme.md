@@ -1,14 +1,24 @@
-# FastAPI with Observability
+# FastAPI with Opentelemetry Observability
 
 Observe the FastAPI application with three pillars of observability on [Grafana](https://github.com/grafana/grafana):
 
-1. Traces with [Tempo](https://github.com/grafana/tempo) and [OpenTelemetry Python SDK](https://github.com/open-telemetry/opentelemetry-python)
+1. Traces with [Tempo](https://github.com/grafana/tempo) and 
 2. Metrics with [Prometheus](https://prometheus.io/) and [Prometheus Python Client](https://github.com/prometheus/client_python)
 3. Logs with [Loki](https://github.com/grafana/loki)
 
-![Observability Architecture](./images/observability-arch.jpg)
+using only [OpenTelemetry Python SDK](https://github.com/open-telemetry/opentelemetry-python). This is based
+on the awesome demo: https://github.com/blueswen/fastapi-observability
+
+The FastAPI application can be configured to use one of the 3 approaches
+of observability with Opentelemetry using the environment variable
+`OTEL_AUTO_INSTRUMENTATION_LEVEL`:
+
+- `0`: Manual instrumentation - the code is heavily modified to handle trace and metrics
+- `1`: Programmatic instrumentation - the code is lightly modified to load the instrumentation provided by the Opentelemetry Python contrib project with fine tuning of the configuration.
+- `2`: Zero-code instrumentation - the code is not modified and instrumentation will be injected at the start of the python process.
 
 ## Table of contents
+
 - [FastAPI with Observability](#fastapi-with-observability)
   - [Table of contents](#table-of-contents)
   - [Quick Start](#quick-start)
@@ -81,6 +91,13 @@ Observe the FastAPI application with three pillars of observability on [Grafana]
 
    The dashboard is also available on [Grafana Dashboards](https://grafana.com/grafana/dashboards/16110).
 
+
+> [!NOTE]
+> This quick start present the fully manual instrumentation (level `0`).
+> For level `1` and `2`, you will have to use the `FastAPI Otel Observability` dashboard
+> as the meters will have a different name.
+
+
 ## Explore with Grafana
 
 Grafana provides a great solution, which could observe specific actions in service between traces, metrics, and logs through trace ID and exemplar.
@@ -117,33 +134,9 @@ For a more complex scenario, we use three FastAPI applications with the same cod
 
 #### Traces and Logs
 
-We use [OpenTelemetry Python SDK](https://github.com/open-telemetry/opentelemetry-python) to send trace info with gRCP to Tempo. Each request span contains other child spans when using OpenTelemetry instrumentation. The reason is that instrumentation will catch each internal asgi interaction ([opentelemetry-python-contrib issue #831](https://github.com/open-telemetry/opentelemetry-python-contrib/issues/831#issuecomment-1005163018)). If you want to get rid of the internal spans, there is a [workaround](https://github.com/open-telemetry/opentelemetry-python-contrib/issues/831#issuecomment-1116225314) in the same issue #831 by using a new OpenTelemetry middleware with two overridden methods for span processing.
+We use [OpenTelemetry Python SDK](https://github.com/open-telemetry/opentelemetry-python) to send trace info with http to Tempo. Each request span contains other child spans when using OpenTelemetry instrumentation. The reason is that instrumentation will catch each internal asgi interaction ([opentelemetry-python-contrib issue #831](https://github.com/open-telemetry/opentelemetry-python-contrib/issues/831#issuecomment-1005163018)). If you want to get rid of the internal spans, there is a [workaround](https://github.com/open-telemetry/opentelemetry-python-contrib/issues/831#issuecomment-1116225314) in the same issue #831 by using a new OpenTelemetry middleware with two overridden methods for span processing.
 
 We use [OpenTelemetry Logging Instrumentation](https://opentelemetry-python-contrib.readthedocs.io/en/latest/instrumentation/logging/logging.html) to override the logger format with another format with trace id and span id.
-
-```py
-# fastapi_app/utils.py
-
-def setting_otlp(app: ASGIApp, app_name: str, endpoint: str, log_correlation: bool = True) -> None:
-    # Setting OpenTelemetry
-    # set the service name to show in traces
-    resource = Resource.create(attributes={
-        "service.name": app_name, # for Tempo to distinguish source
-        "compose_service": app_name # as a query criteria for Trace to logs
-    })
-
-    # set the tracer provider
-    tracer = TracerProvider(resource=resource)
-    trace.set_tracer_provider(tracer)
-
-    tracer.add_span_processor(BatchSpanProcessor(
-        OTLPSpanExporter(endpoint=endpoint)))
-
-    if log_correlation:
-        LoggingInstrumentor().instrument(set_logging_format=True)
-
-    FastAPIInstrumentor.instrument_app(app, tracer_provider=tracer)
-```
 
 The following image shows the span info sent to Tempo and queried on Grafana. Trace span info provided by `FastAPIInstrumentor` with trace ID (17785b4c3d530b832fb28ede767c672c), span id(d410eb45cc61f442), service name(app-a), custom attributes(service.name=app-a, compose_service=app-a) and so on.
 
@@ -162,27 +155,6 @@ The following image is what the logs look like.
 #### Span Inject
 
 If you want other services to use the same Trace ID, you have to use `inject` function to add current span information to the header. Because OpenTelemetry FastAPI instrumentation only takes care of the asgi app's request and response, it does not affect any other modules or actions like sending HTTP requests to other servers or function calls.
-
-```py
-# fastapi_app/main.py
-
-from opentelemetry.propagate import inject
-
-@app.get("/chain")
-async def chain(response: Response):
-
-    headers = {}
-    inject(headers)  # inject trace info to header
-
-    async with httpx.AsyncClient() as client:
-        await client.get(f"http://localhost:8000/", headers=headers,)
-    async with httpx.AsyncClient() as client:
-        await client.get(f"http://{TARGET_ONE_HOST}:8000/io_task", headers=headers,)
-    async with httpx.AsyncClient() as client:
-        await client.get(f"http://{TARGET_TWO_HOST}:8000/cpu_task", headers=headers,)
-
-    return {"path": "/chain"}
-```
 
 Alternatively, we can use the [instrumentation library for HTTPX](https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation/opentelemetry-instrumentation-httpx) to instrument HTTPX. Following is the example of using OpenTelemetry HTTPX Instrumentation which will automatically inject trace info to the header.
 
@@ -204,85 +176,38 @@ async def chain(response: Response):
     return {"path": "/chain"}
 ```
 
+> This is what will happen in the zero-code instrumentation case.
+
 #### Metrics
 
-Use [Prometheus Python Client](https://github.com/prometheus/client_python) to generate OpenTelemetry format metric with [exemplars](https://github.com/prometheus/client_python#exemplars) and expose on `/metrics` for Prometheus.
+We use the OpenTelemetry Python SDK to generate metrics with exemplars.
 
-In order to add an exemplar to metrics, we retrieve the trace id from the current span for the exemplar and add the trace id dict to the Histogram or Counter metrics.
+> Exemplars are not yet available in the stable version of the Python SDK (as of 1.27.0). But they
+> will be in the next release.
 
-```py
-# fastapi_app/utils.py
+The metrics are pushed directly to Prometheus as it is configured
+through a feature flag to support receiving OpenTelemetry metrics (`--enable-feature=otlp-write-receiver`). This induces some constraints
+on Prometheus capabilities.
 
-from opentelemetry import trace
-from prometheus_client import Histogram
+> To still use Prometheus in pull mode when using OpenTelemetry, a good
+> solution is to add a OpenTelemetry to which your services will pushed
+> metrics and from which Prometheus will pull them.
 
-REQUESTS_PROCESSING_TIME = Histogram(
-    "fastapi_requests_duration_seconds",
-    "Histogram of requests processing time by path (in seconds)",
-    ["method", "path", "app_name"],
-)
-
-# retrieve trace id for exemplar
-span = trace.get_current_span()
-trace_id = trace.format_trace_id(
-      span.get_span_context().trace_id)
-
-REQUESTS_PROCESSING_TIME.labels(method=method, path=path, app_name=self.app_name).observe(
-      after_time - before_time, exemplar={'TraceID': trace_id}
-)
-```
-
-Because exemplars is a new datatype proposed in [OpenMetrics](https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md#exemplars), `/metrics` have to use `CONTENT_TYPE_LATEST` and `generate_latest` from `prometheus_client.openmetrics.exposition` module instead of `prometheus_client` module. Otherwise using the wrong generate_latest the exemplars dict behind Counter and Histogram will never show up, and using the wrong CONTENT_TYPE_LATEST will cause Prometheus scraping to fail.
-
-```py
-# fastapi_app/utils.py
-
-from prometheus_client import REGISTRY
-from prometheus_client.openmetrics.exposition import CONTENT_TYPE_LATEST, generate_latest
-
-def metrics(request: Request) -> Response:
-    return Response(generate_latest(REGISTRY), headers={"Content-Type": CONTENT_TYPE_LATEST})
-```
-
-Metrics with exemplars
-
-![Metrics With Exemplars](./images/metrics-with-exemplars.png)
 
 #### OpenTelemetry Instrumentation
 
 There are two methods to add trace information to spans and logs using the OpenTelemetry Python SDK:
 
 1. [Code-based Instrumentation](https://opentelemetry.io/docs/languages/python/instrumentation/): This involves adding trace information to spans, logs, and metrics using the OpenTelemetry Python SDK. It requires more coding effort but allows for the addition of exemplars to metrics. We employ this approach in this project.
-2. [Zero-code Instrumentation](https://opentelemetry.io/docs/zero-code/python/): This method automatically instruments a Python application using instrumentation libraries, but only when the used [frameworks and libraries](https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation#readme) are supported. It simplifies the process by eliminating the need for manual code changes. However, it does not allow for the addition of exemplars to metrics. For more insights into zero-code instrumentation, refer to my other project, [OpenTelemetry APM](https://github.com/blueswen/opentelemetry-apm?tab=readme-ov-file#python---fastapi).
+2. [Zero-code Instrumentation](https://opentelemetry.io/docs/zero-code/python/): This method automatically instruments a Python application using instrumentation libraries, but only when the used [frameworks and libraries](https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation#readme) are supported. It simplifies the process by eliminating the need for manual code changes. For more insights into zero-code instrumentation, refer to my other project, [OpenTelemetry APM](https://github.com/blueswen/opentelemetry-apm?tab=readme-ov-file#python---fastapi).
 
 ### Prometheus - Metrics
 
 Collects metrics from applications.
 
-#### Prometheus Config
-
-Define all FastAPI applications metrics scrape jobs in `etc/prometheus/prometheus.yml`.
-
-```yaml
-...
-scrape_configs:
-  - job_name: 'app-a'
-    scrape_interval: 5s
-    static_configs:
-      - targets: ['app-a:8000']
-  - job_name: 'app-b'
-    scrape_interval: 5s
-    static_configs:
-      - targets: ['app-b:8000']
-  - job_name: 'app-c'
-    scrape_interval: 5s
-    static_configs:
-      - targets: ['app-c:8000']
-```
-
 #### Grafana Data Source
 
-Add an Exemplars which uses the value of `TraceID` label to create a Tempo link.
+Add an Exemplars which uses the value of `trace_id` label to create a Tempo link.
 
 Grafana data source setting example:
 
@@ -304,7 +229,7 @@ isDefault: true
 jsonData:
 exemplarTraceIdDestinations:
    - datasourceUid: tempo
-      name: TraceID
+      name: trace_id
 httpMethod: POST
 readOnly: false
 editable: true
@@ -431,16 +356,3 @@ grafana:
       - ./etc/dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml # dashboard setting
       - ./etc/dashboards:/etc/grafana/dashboards # dashboard json files directory
 ```
-
-## Reference
-
-1. [FastAPI Traces Demo](https://github.com/softwarebloat/python-tracing-demo)
-2. [Waber - A Uber-like (Car-Hailing APP) cloud-native application with OpenTelemetry](https://github.com/Johnny850807/Waber)
-3. [Intro to exemplars, which enable Grafana Tempo’s distributed tracing at massive scale](https://grafana.com/blog/2021/03/31/intro-to-exemplars-which-enable-grafana-tempos-distributed-tracing-at-massive-scale/)
-4. [Trace discovery in Grafana Tempo using Prometheus exemplars, Loki 2.0 queries, and more](https://grafana.com/blog/2020/11/09/trace-discovery-in-grafana-tempo-using-prometheus-exemplars-loki-2.0-queries-and-more/)
-5. [The New Stack (TNS) observability app](https://github.com/grafana/tns)
-6. [Don’t Repeat Yourself with Anchors, Aliases and Extensions in Docker Compose Files](https://medium.com/@kinghuang/docker-compose-anchors-aliases-extensions-a1e4105d70bd)
-7. [How can I escape a $ dollar sign in a docker compose file?](https://stackoverflow.com/a/40621373)
-8. [Tempo Trace to logs tags discussion](https://community.grafana.com/t/need-to-customize-tempo-option-for-trace-logs-with-loki/59612)
-9. [Starlette Prometheus](https://github.com/perdy/starlette-prometheus)
-10. [Tempo Example](https://github.com/grafana/tempo/tree/main/example/docker-compose/local)
