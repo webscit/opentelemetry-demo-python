@@ -4,12 +4,12 @@ opentelemetry-semantic-conventions @ git+https://github.com/open-telemetry/opent
 opentelemetry-proto @ git+https://github.com/open-telemetry/opentelemetry-python.git@f15821fe272707930caab57c0e906bdb0d04074f#subdirectory=opentelemetry-proto
 opentelemetry-exporter-otlp @ git+https://github.com/open-telemetry/opentelemetry-python.git@f15821fe272707930caab57c0e906bdb0d04074f#subdirectory=exporter/opentelemetry-exporter-otlp
 opentelemetry-exporter-otlp-proto-common @ git+https://github.com/open-telemetry/opentelemetry-python.git@f15821fe272707930caab57c0e906bdb0d04074f#subdirectory=exporter/opentelemetry-exporter-otlp-proto-common
-# opentelemetry-exporter-otlp-proto-grpc @ git+https://github.com/open-telemetry/opentelemetry-python.git@f15821fe272707930caab57c0e906bdb0d04074f#subdirectory=exporter/opentelemetry-exporter-otlp-proto-grpc
+opentelemetry-exporter-otlp-proto-grpc @ git+https://github.com/open-telemetry/opentelemetry-python.git@f15821fe272707930caab57c0e906bdb0d04074f#subdirectory=exporter/opentelemetry-exporter-otlp-proto-grpc
 opentelemetry-exporter-otlp-proto-http @ git+https://github.com/open-telemetry/opentelemetry-python.git@f15821fe272707930caab57c0e906bdb0d04074f#subdirectory=exporter/opentelemetry-exporter-otlp-proto-http
 
 opentelemetry-instrumentation @ git+https://github.com/open-telemetry/opentelemetry-python-contrib.git@ee67ea8ba5380e55be1a9bb1f7e8bc916ff3bdec#subdirectory=opentelemetry-instrumentation
 opentelemetry-distro @ git+https://github.com/open-telemetry/opentelemetry-python-contrib.git@ee67ea8ba5380e55be1a9bb1f7e8bc916ff3bdec#subdirectory=opentelemetry-distro
-opentelemetry-instrumentation-util-http @ git+https://github.com/open-telemetry/opentelemetry-python-contrib.git@ee67ea8ba5380e55be1a9bb1f7e8bc916ff3bdec#subdirectory=util/opentelemetry-util-http
+opentelemetry-util-http @ git+https://github.com/open-telemetry/opentelemetry-python-contrib.git@ee67ea8ba5380e55be1a9bb1f7e8bc916ff3bdec#subdirectory=util/opentelemetry-util-http
 opentelemetry-instrumentation-asgi @ git+https://github.com/open-telemetry/opentelemetry-python-contrib.git@ee67ea8ba5380e55be1a9bb1f7e8bc916ff3bdec#subdirectory=instrumentation/opentelemetry-instrumentation-asgi
 opentelemetry-instrumentation-httpx @ git+https://github.com/open-telemetry/opentelemetry-python-contrib.git@ee67ea8ba5380e55be1a9bb1f7e8bc916ff3bdec#subdirectory=instrumentation/opentelemetry-instrumentation-httpx
 opentelemetry-instrumentation-fastapi @ git+https://github.com/open-telemetry/opentelemetry-python-contrib.git@ee67ea8ba5380e55be1a9bb1f7e8bc916ff3bdec#subdirectory=instrumentation/opentelemetry-instrumentation-fastapi

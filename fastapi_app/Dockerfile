@@ -24,6 +24,7 @@ RUN git clone --depth=20 --single-branch --branch=main https://github.com/open-t
         ./exporter/opentelemetry-exporter-otlp \
         ./exporter/opentelemetry-exporter-otlp-proto-common \
         ./exporter/opentelemetry-exporter-otlp-proto-http \
+        ./exporter/opentelemetry-exporter-otlp-proto-grpc \
     && cd ..
 
 RUN git clone --depth=40 --single-branch --branch=main https://github.com/open-telemetry/opentelemetry-python-contrib.git contrib\
