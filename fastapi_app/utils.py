@@ -2,12 +2,14 @@ import logging
 import time
 from typing import Tuple
 
-from opentelemetry import trace
+from opentelemetry import context, trace
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+from opentelemetry.instrumentation.asgi import asgi_getter, asgi_setter
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.instrumentation.logging import LoggingInstrumentor
 from opentelemetry import metrics as otel_metrics
 from opentelemetry.exporter.otlp.proto.http.metric_exporter import OTLPMetricExporter
+from opentelemetry.propagate import extract
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import (
     PeriodicExportingMetricReader,
@@ -26,11 +28,11 @@ from starlette.types import ASGIApp
 
 class OtelMiddleware(BaseHTTPMiddleware):
     def __init__(
-        self, app: ASGIApp, app_name: str = "fastapi-app", meter_provider=None
+        self, app: ASGIApp, app_name: str, meter_provider, trace_provider
     ) -> None:
         super().__init__(app)
         self.app_name = app_name
-
+        self.tracer = trace_provider.get_tracer("otel-middleware")
         meter = meter_provider.get_meter("otel-middleware", version="1.0.0")
 
         self.m_requests = meter.create_counter(
@@ -65,39 +67,50 @@ class OtelMiddleware(BaseHTTPMiddleware):
 
         attributes = {"method": method, "path": path, "app_name": self.app_name}
 
-        self.m_requests_in_progress.add(1, attributes)
+        ctx = extract(request.scope, getter=asgi_getter)
+        context.attach(ctx)
 
-        self.m_requests.add(1, attributes)
+        with self.tracer.start_as_current_span(
+            f"{method} {path}",
+            context=ctx,
+            kind=trace.SpanKind.SERVER,
+            attributes=attributes,
+        ):
+            self.m_requests_in_progress.add(1, attributes)
 
-        before_time = time.perf_counter()
-        try:
-            response = await call_next(request)
-        except BaseException as e:
-            status_code = HTTP_500_INTERNAL_SERVER_ERROR
-            exception_attributes = attributes.copy()
-            exception_attributes.update({"exception_type": type(e).__name__})
-            self.m_exceptions.add(1, exception_attributes)
-            raise e from None
-        else:
-            status_code = response.status_code
-            after_time = time.perf_counter()
+            self.m_requests.add(1, attributes)
 
-            self.m_requests_processing_time.record(after_time - before_time, attributes)
+            before_time = time.perf_counter()
+            try:
+                response = await call_next(request)
+            except BaseException as e:
+                status_code = HTTP_500_INTERNAL_SERVER_ERROR
+                exception_attributes = attributes.copy()
+                exception_attributes.update({"exception_type": type(e).__name__})
+                self.m_exceptions.add(1, exception_attributes)
+                raise e from None
+            else:
+                status_code = response.status_code
+                after_time = time.perf_counter()
 
-            # FIXME - done automatically in otel - retrieve trace id for exemplar
-            # span = trace.get_current_span()
-            # trace_id = trace.format_trace_id(span.get_span_context().trace_id)
+                self.m_requests_processing_time.record(
+                    after_time - before_time, attributes
+                )
 
-            # REQUESTS_PROCESSING_TIME.labels(
-            #     method=method, path=path, app_name=self.app_name
-            # ).observe(, exemplar={"TraceID": trace_id})
-        finally:
-            response_attributes = attributes.copy()
-            response_attributes.update({"status_code": status_code})
-            self.m_responses.add(1, response_attributes)
-            self.m_requests_in_progress.add(-1, attributes)
+                # FIXME - done automatically in otel - retrieve trace id for exemplar
+                # span = trace.get_current_span()
+                # trace_id = trace.format_trace_id(span.get_span_context().trace_id)
 
-        return response
+                # REQUESTS_PROCESSING_TIME.labels(
+                #     method=method, path=path, app_name=self.app_name
+                # ).observe(, exemplar={"TraceID": trace_id})
+            finally:
+                response_attributes = attributes.copy()
+                response_attributes.update({"status_code": status_code})
+                self.m_responses.add(1, response_attributes)
+                self.m_requests_in_progress.add(-1, attributes)
+
+            return response
 
     @staticmethod
     def get_path(request: Request) -> Tuple[str, bool]:
@@ -121,7 +134,11 @@ def setting_otlp(
     - '1': Application instrumentation is only through the opentelemetry contrib middleware for logs, traces and metrics
     - '2': Application is expected to be executed by the opentelemetry agent `opentelemetry-instrument <my-app>`
     """
-    logging.getLogger("fastapi_app").info("Auto instrumentation level for service %s: %s", app_name, auto_instrumentation_level)
+    logging.getLogger("fastapi_app").info(
+        "Auto instrumentation level for service %s: %s",
+        app_name,
+        auto_instrumentation_level,
+    )
     if auto_instrumentation_level < "2":
         # Setting OpenTelemetry
         # set the service name to show in traces
@@ -130,7 +147,7 @@ def setting_otlp(
                 # Standard attribute to reference a service
                 "service.name": app_name,
                 # Attributes to link traces to logs
-                "compose_service": app_name
+                "compose_service": app_name,
             }
         )
 
@@ -145,7 +162,10 @@ def setting_otlp(
         )
         # Debug exporter to print metric on stdout
         # reader2 = PeriodicExportingMetricReader(ConsoleMetricExporter(), export_interval_millis=5_000)
-        meter_provider = MeterProvider(resource=resource, metric_readers=[reader])
+        meter_provider = MeterProvider(
+            resource=resource,
+            metric_readers=[reader],
+        )
         otel_metrics.set_meter_provider(meter_provider)
 
         if log_correlation:
@@ -155,13 +175,15 @@ def setting_otlp(
         if auto_instrumentation_level == "0":
             logging.getLogger("fastapi_app").info("Use custom otel meters.")
             app.add_middleware(
-                OtelMiddleware, app_name=app_name, meter_provider=meter_provider
+                OtelMiddleware,
+                app_name=app_name,
+                meter_provider=meter_provider,
+                trace_provider=tracer,
             )
-        logging.getLogger("fastapi_app").info("Set FastAPI instrumentor.")
-        FastAPIInstrumentor.instrument_app(
-            app,
-            tracer_provider=tracer,
-            meter_provider=meter_provider
-            if auto_instrumentation_level == "1"
-            else None,
-        )
+        elif auto_instrumentation_level == "1":
+            logging.getLogger("fastapi_app").info("Set FastAPI instrumentor.")
+            FastAPIInstrumentor.instrument_app(
+                app,
+                tracer_provider=tracer,
+                meter_provider=meter_provider,
+            )
