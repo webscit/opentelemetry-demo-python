@@ -52,9 +52,8 @@ datasources:
         datasourceUid: loki
         filterBySpanID: false
         filterByTraceID: true
-        mapTagNamesEnabled: false
-        tags:
-          - compose_service
+        mapTagNamesEnabled: true
+        mappedTags: [{ key: "service.name", value: "compose_service" }]
     readOnly: false
     editable: true
   - uid: loki
