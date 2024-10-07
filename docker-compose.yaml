@@ -29,6 +29,7 @@ services:
       OTEL_TRACES_EXPORTER: otlp
       OTEL_METRICS_EXPORTER: otlp
       OTEL_EXPORTER_OTLP_METRICS_PROTOCOL: http/protobuf
+      OTEL_METRIC_EXPORT_INTERVAL: "5"
       OTEL_PYTHON_LOG_CORRELATION: true
       # OTEL_PYTHON_LOG_LEVEL: debug
       # For test purpose - not an official environment variable
@@ -56,6 +57,7 @@ services:
       OTEL_TRACES_EXPORTER: otlp
       OTEL_METRICS_EXPORTER: otlp
       OTEL_EXPORTER_OTLP_METRICS_PROTOCOL: http/protobuf
+      OTEL_METRIC_EXPORT_INTERVAL: "5"
       OTEL_PYTHON_LOG_CORRELATION: true
       # OTEL_PYTHON_LOG_LEVEL: debug
       # For test purpose - not an official environment variable
@@ -84,6 +86,7 @@ services:
       OTEL_TRACES_EXPORTER: otlp
       OTEL_METRICS_EXPORTER: otlp
       OTEL_EXPORTER_OTLP_METRICS_PROTOCOL: http/protobuf
+      OTEL_METRIC_EXPORT_INTERVAL: "5"
       OTEL_PYTHON_LOG_CORRELATION: true
       # OTEL_PYTHON_LOG_LEVEL: debug
       # For test purpose - not an official environment variable
