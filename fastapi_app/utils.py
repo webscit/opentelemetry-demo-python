@@ -96,14 +96,6 @@ class OtelMiddleware(BaseHTTPMiddleware):
                 self.m_requests_processing_time.record(
                     after_time - before_time, attributes
                 )
-
-                # FIXME - done automatically in otel - retrieve trace id for exemplar
-                # span = trace.get_current_span()
-                # trace_id = trace.format_trace_id(span.get_span_context().trace_id)
-
-                # REQUESTS_PROCESSING_TIME.labels(
-                #     method=method, path=path, app_name=self.app_name
-                # ).observe(, exemplar={"TraceID": trace_id})
             finally:
                 response_attributes = attributes.copy()
                 response_attributes.update({"status_code": status_code})
@@ -130,7 +122,7 @@ def setting_otlp(
 ) -> None:
     """
     auto_instrumentation_level:
-    - '0': Application instrumentation is using opentelemetry contrib for logs and traces but custom metrics
+    - '0': Application instrumentation is using opentelemetry contrib for logs but custom metrics and traces
     - '1': Application instrumentation is only through the opentelemetry contrib middleware for logs, traces and metrics
     - '2': Application is expected to be executed by the opentelemetry agent `opentelemetry-instrument <my-app>`
     """

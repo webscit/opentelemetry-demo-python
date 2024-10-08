@@ -23,16 +23,6 @@ app = FastAPI()
 setting_otlp(app, APP_NAME, AUTO_INSTRUMENTATION_LEVEL)
 
 
-class EndpointFilter(logging.Filter):
-    # Uvicorn endpoint access log filter
-    def filter(self, record: logging.LogRecord) -> bool:
-        return record.getMessage().find("GET /metrics") == -1
-
-
-# Filter out /endpoint
-logging.getLogger("uvicorn.access").addFilter(EndpointFilter())
-
-
 @app.get("/")
 async def read_root():
     logging.error("Hello World")
