@@ -17,7 +17,13 @@ of observability with Opentelemetry using the environment variable
 - `1`: Programmatic instrumentation - the code is lightly modified to load the instrumentation provided by the Opentelemetry Python contrib project with fine tuning of the configuration.
 - `2`: Zero-code instrumentation - the code is not modified and instrumentation will be injected at the start of the python process.
 
-This was presented at the Python Rennes Meet-up on October 10th 2024. Here is the [presentation](./Python_Rennes_20241010_OpenTelemetry.pdf).
+This was presented at the Python Rennes Meet-up on October 10th 2024. Here is the [presentation](./Python_Rennes_20241010_OpenTelemetry.pdf) and the video.
+
+<a href="http://www.youtube.com/watch?feature=player_embedded&v=FVLdaqFLMs0&t=3414
+" target="_blank"><img src="http://img.youtube.com/vi/FVLdaqFLMs0/0.jpg" 
+alt="Presentation video at Python Meet up Rennes" width="240" height="180" border="10" /></a>
+
+> The video is in French
 
 ## Table of contents
 
